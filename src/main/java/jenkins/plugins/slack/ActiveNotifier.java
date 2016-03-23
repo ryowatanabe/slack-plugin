@@ -202,6 +202,7 @@ public class ActiveNotifier implements FineGrainedNotifier {
 
     String getBuildStatusMessage(AbstractBuild r, boolean includeTestSummary, boolean includeCustomMessage) {
         MessageBuilder message = new MessageBuilder(notifier, r);
+        message.appendCauseMessage();
         message.appendStatusMessage();
         message.appendDuration();
         message.appendOpenLink();
@@ -235,6 +236,37 @@ public class ActiveNotifier implements FineGrainedNotifier {
             this.message = new StringBuffer();
             this.build = build;
             startMessage();
+        }
+
+        public MessageBuilder appendCauseMessage() {
+            if (!notifier.getShowCauseOfExecution()) {
+                return this;
+            }
+            message.append(this.escape(getCauseMessage(build)));
+            return this;
+        }
+
+        static String getCauseMessage(AbstractBuild r) {
+            Cause.UpstreamCause upstreamCause   = (Cause.UpstreamCause)r.getCause(hudson.model.Cause.UpstreamCause.class);
+            Cause.UserIdCause   userIdCause     = (Cause.UserIdCause)r.getCause(hudson.model.Cause.UserIdCause.class);
+
+            while (upstreamCause != null) {
+                String          upProjectName = upstreamCause.getUpstreamProject();
+                int             buildNumber   = upstreamCause.getUpstreamBuild();
+                AbstractProject project       = Hudson.getInstance().getItemByFullName(upProjectName, AbstractProject.class);
+                AbstractBuild   upBuild       = (AbstractBuild)project.getBuildByNumber(buildNumber);
+                upstreamCause   = (Cause.UpstreamCause)upBuild.getCause(hudson.model.Cause.UpstreamCause.class);
+                userIdCause     = (Cause.UserIdCause)upBuild.getCause(hudson.model.Cause.UserIdCause.class);
+            }
+
+            String user = "";
+            if (userIdCause != null) {
+                user = userIdCause.getUserId();
+            } else {
+                return "";
+            }
+            
+            return "@" + user + " ";
         }
 
         public MessageBuilder appendStatusMessage() {

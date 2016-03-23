@@ -48,6 +48,7 @@ public class SlackNotifier extends Notifier {
     private CommitInfoChoice commitInfoChoice;
     private boolean includeCustomMessage;
     private String customMessage;
+    private boolean showCauseOfExecution;
 
     @Override
     public DescriptorImpl getDescriptor() {
@@ -128,12 +129,16 @@ public class SlackNotifier extends Notifier {
         return customMessage;
     }
 
+    public boolean getShowCauseOfExecution() {
+        return showCauseOfExecution;
+    }
+
     @DataBoundConstructor
     public SlackNotifier(final String teamDomain, final String authToken, final String room, final String buildServerUrl,
                          final String sendAs, final boolean startNotification, final boolean notifyAborted, final boolean notifyFailure,
                          final boolean notifyNotBuilt, final boolean notifySuccess, final boolean notifyUnstable, final boolean notifyBackToNormal,
                          final boolean notifyRepeatedFailure, final boolean includeTestSummary, CommitInfoChoice commitInfoChoice,
-                         boolean includeCustomMessage, String customMessage) {
+                         boolean includeCustomMessage, String customMessage, final boolean showCauseOfExecution) {
         super();
         this.teamDomain = teamDomain;
         this.authToken = authToken;
@@ -152,6 +157,7 @@ public class SlackNotifier extends Notifier {
         this.commitInfoChoice = commitInfoChoice;
         this.includeCustomMessage = includeCustomMessage;
         this.customMessage = customMessage;
+        this.showCauseOfExecution = showCauseOfExecution;
     }
 
     public BuildStepMonitor getRequiredMonitorService() {
@@ -267,9 +273,10 @@ public class SlackNotifier extends Notifier {
             CommitInfoChoice commitInfoChoice = CommitInfoChoice.forDisplayName(sr.getParameter("slackCommitInfoChoice"));
             boolean includeCustomMessage = "on".equals(sr.getParameter("includeCustomMessage"));
             String customMessage = sr.getParameter("customMessage");
+            boolean showCauseOfExecution = "true".equals(sr.getParameter("showCauseOfExecution"));
             return new SlackNotifier(teamDomain, token, room, buildServerUrl, sendAs, startNotification, notifyAborted,
-                    notifyFailure, notifyNotBuilt, notifySuccess, notifyUnstable, notifyBackToNormal, notifyRepeatedFailure,
-                    includeTestSummary, commitInfoChoice, includeCustomMessage, customMessage);
+                                     notifyFailure, notifyNotBuilt, notifySuccess, notifyUnstable, notifyBackToNormal, notifyRepeatedFailure,
+                                     includeTestSummary, commitInfoChoice, includeCustomMessage, customMessage, showCauseOfExecution);
         }
 
         @Override
@@ -348,6 +355,7 @@ public class SlackNotifier extends Notifier {
         private boolean showCommitList;
         private boolean includeCustomMessage;
         private String customMessage;
+        private boolean showCauseOfExecution;
 
         @DataBoundConstructor
         public SlackJobProperty(String teamDomain,
@@ -364,7 +372,8 @@ public class SlackNotifier extends Notifier {
                                 boolean includeTestSummary,
                                 boolean showCommitList,
                                 boolean includeCustomMessage,
-                                String customMessage) {
+                                String customMessage, 
+                                boolean showCauseOfExecution) {
             this.teamDomain = teamDomain;
             this.token = token;
             this.room = room;
@@ -380,6 +389,7 @@ public class SlackNotifier extends Notifier {
             this.showCommitList = showCommitList;
             this.includeCustomMessage = includeCustomMessage;
             this.customMessage = customMessage;
+            this.showCauseOfExecution = showCauseOfExecution;
         }
 
         @Exported
@@ -462,6 +472,11 @@ public class SlackNotifier extends Notifier {
             return customMessage;
         }
 
+        @Exported
+        public boolean getShowCauseOfExecution() {
+            return showCauseOfExecution;
+        }
+
     }
 
     @Extension public static final class Migrator extends ItemListener {
@@ -514,6 +529,7 @@ public class SlackNotifier extends Notifier {
                     slackNotifier.commitInfoChoice = slackJobProperty.getShowCommitList() ? CommitInfoChoice.AUTHORS_AND_TITLES : CommitInfoChoice.NONE;
                     slackNotifier.includeCustomMessage = slackJobProperty.includeCustomMessage();
                     slackNotifier.customMessage = slackJobProperty.getCustomMessage();
+                    slackNotifier.showCauseOfExecution = slackJobProperty.getShowCauseOfExecution();
                 }
 
                 try {
